@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bình chọn Top 4 nhóm</title>
+
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * { font-family: 'Quicksand', sans-serif; }
+    html, body { margin: 0; padding: 0; }
+    .card-hover { transition: all 0.2s ease; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.12); }
+    .selected-card { transform: scale(1.02); box-shadow: 0 0 0 3px #fff, 0 0 0 5px currentColor; }
+    .fade-in { animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .toast { animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s; }
+    @keyframes slideIn {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(-100%); opacity: 0; }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50"></div>
+
+  <div id="loading-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-40">
+    <div class="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl">
+      <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-gray-700 font-semibold">Đang xử lý...</p>
+    </div>
+  </div>
+
+  <nav class="sticky top-0 bg-white/90 backdrop-blur-md shadow-sm z-30">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-center gap-2">
+      <button id="nav-form" class="px-6 py-2 rounded-full font-semibold transition-all bg-indigo-500 text-white">
+        📝 Bình chọn
+      </button>
+      <button id="nav-stats" class="px-6 py-2 rounded-full font-semibold transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
+        📊 Thống kê
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    <!-- FORM VIEW -->
+    <section id="form-view" class="fade-in">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full mb-4 shadow-lg">
+          <span class="text-4xl">🏆</span>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+          BÌNH CHỌN TOP 4 TRONG 17 NHÓM
+        </h1>
+        <p class="text-gray-600 text-lg max-w-3xl mx-auto leading-relaxed">
+          Mỗi người tham gia chọn đúng <strong class="text-indigo-600">5 nhóm yêu thích nhất</strong>.
+          Cuối cùng lấy <strong class="text-pink-600">Top 4</strong> vào vòng trong.
+        </p>
+      </div>
+
+      <div class="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-5 mb-8">
+        <div class="flex items-start gap-3">
+          <span class="text-2xl">⚠️</span>
+          <div>
+            <h3 class="font-bold text-amber-800 text-lg mb-2">QUY TẮC BÌNH CHỌN</h3>
+            <ul class="text-amber-700 space-y-1">
+              <li>• Học sinh chọn theo mã <strong>Lớp - Nhóm - STT</strong></li>
+              <li>• Học sinh <strong>không được bình chọn nhóm của mình</strong></li>
+              <li>• Có <strong>15 giáo viên</strong> tham gia bình chọn</li>
+              <li>• Mỗi người chỉ được gửi <strong>1 phiếu</strong></li>
+              <li>• Mỗi phiếu phải chọn đúng <strong>5 nhóm khác nhau</strong></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-xl p-6 mb-6">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center font-bold text-lg">1</div>
+          <h2 class="text-xl font-bold text-gray-800">Chọn người bình chọn</h2>
+        </div>
+
+        <!-- Student picker -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+            <p class="text-sm font-semibold text-gray-600">🎓 Học sinh</p>
+            <p class="text-xs text-gray-400">Ví dụ: 11A11 - Nhóm 2 - STT 10</p>
+          </div>
+
+          <div class="grid md:grid-cols-4 gap-3 mb-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-2">Lớp</label>
+              <select id="student-class" class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <option value="">-- Chọn lớp --</option>
+                <option value="11A11">11A11</option>
+                <option value="11A12">11A12</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-2">Nhóm</label>
+              <select id="student-group" class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <option value="">-- Chọn nhóm --</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-2">STT</label>
+              <select id="student-stt" class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <option value="">-- Chọn STT --</option>
+              </select>
+            </div>
+
+            <div class="flex items-end">
+              <button id="select-student-btn" class="w-full px-4 py-3 rounded-2xl bg-indigo-500 text-white font-bold hover:bg-indigo-600 transition-all">
+                Chọn học sinh
+              </button>
+            </div>
+          </div>
+
+          <div id="student-preview" class="hidden p-4 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-700 font-semibold"></div>
+        </div>
+
+        <!-- Teacher picker -->
+        <div>
+          <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+            <p class="text-sm font-semibold text-gray-600">👨‍🏫 Giáo viên (15 người)</p>
+            <p class="text-xs text-gray-400">Mã mặc định: GV01 → GV15</p>
+          </div>
+          <div id="teacher-buttons" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2"></div>
+        </div>
+      </div>
+
+      <div id="voting-section" class="bg-white rounded-3xl shadow-xl p-6 mb-6 hidden">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-10 h-10 bg-purple-500 text-white rounded-full flex items-center justify-center font-bold text-lg">2</div>
+          <h2 class="text-xl font-bold text-gray-800">Chọn đúng 5 nhóm bạn yêu thích nhất</h2>
+        </div>
+
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl p-4 mb-5 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">⭐</span>
+            <span class="font-semibold">Đã chọn:</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="vote-count" class="text-3xl font-bold">0</span>
+            <span class="text-xl">/</span>
+            <span class="text-3xl font-bold">5</span>
+          </div>
+        </div>
+
+        <p id="voting-note" class="text-sm text-gray-500 mb-4 p-3 bg-gray-50 rounded-xl"></p>
+        <div id="voting-groups" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+      </div>
+
+      <div id="submit-section" class="hidden">
+        <button id="submit-btn" disabled
+          class="w-full py-5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-xl font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3">
+          <span>🗳️</span>
+          <span>GỬI BÌNH CHỌN</span>
+          <span>✨</span>
+        </button>
+        <p class="text-center text-gray-500 text-sm mt-4 p-4 bg-white/50 rounded-xl">
+          Mỗi người chỉ gửi 1 lần. Học sinh không được bình chọn nhóm của mình.
+        </p>
+      </div>
+
+      <div id="success-message" class="hidden text-center py-12">
+        <div class="inline-flex items-center justify-center w-24 h-24 bg-green-100 rounded-full mb-6">
+          <span class="text-5xl">🎉</span>
+        </div>
+        <h2 class="text-2xl font-bold text-green-600 mb-3">Gửi bình chọn thành công!</h2>
+        <p class="text-gray-600 mb-6">Cảm ơn bạn đã tham gia bình chọn</p>
+        <button id="reset-btn" class="px-8 py-3 bg-indigo-500 text-white font-semibold rounded-full hover:bg-indigo-600 transition-all">
+          Bình chọn lượt mới
+        </button>
+      </div>
+    </section>
+
+    <!-- STATS VIEW -->
+    <section id="stats-view" class="hidden fade-in">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full mb-4 shadow-lg">
+          <span class="text-4xl">📊</span>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
+          BẢNG THỐNG KÊ BÌNH CHỌN
+        </h1>
+        <p class="text-gray-600 text-lg">Top 4 nhóm vào vòng trong</p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div class="bg-white rounded-2xl p-5 shadow-lg text-center">
+          <p class="text-gray-500 text-sm mb-1">Tổng phiếu</p>
+          <p id="total-votes" class="text-3xl font-bold text-indigo-600">0</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-lg text-center">
+          <p class="text-gray-500 text-sm mb-1">Học sinh</p>
+          <p id="student-votes" class="text-3xl font-bold text-purple-600">0</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-lg text-center">
+          <p class="text-gray-500 text-sm mb-1">Giáo viên</p>
+          <p id="teacher-votes" class="text-3xl font-bold text-pink-600">0</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-lg text-center">
+          <p class="text-gray-500 text-sm mb-1">Đã dùng</p>
+          <p id="used-voters" class="text-3xl font-bold text-emerald-600">0</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-lg text-center">
+          <p class="text-gray-500 text-sm mb-1">Còn lại</p>
+          <p id="remaining-votes" class="text-3xl font-bold text-gray-600">103</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-xl p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-5">🏆 TOP 4 VÀO VÒNG TRONG</h2>
+        <div id="top4-podium" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-xl p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-5">📋 BẢNG XẾP HẠNG 17 NHÓM</h2>
+        <div id="full-ranking" class="space-y-2"></div>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-xl p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-5">📜 LỊCH SỬ BÌNH CHỌN</h2>
+        <div id="vote-history" class="space-y-3 max-h-[520px] overflow-auto">
+          <p class="text-gray-400 text-center py-8">Chưa có phiếu bình chọn nào</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      onSnapshot,
+      runTransaction,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    // =========================
+    // FIREBASE CONFIG
+    // Thay toàn bộ phần này bằng config của bạn
+    // =========================
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const CONFIG = {
+      GROUP_COUNT: 17,
+      TEACHER_COUNT: 15,
+      REQUIRED_VOTES: 5,
+      TOTAL_EXPECTED_VOTERS: 103, // 40 + 48 + 15
+      CLASS_CONFIG: {
+        "11A11": 40,
+        "11A12": 48
+      }
+    };
+
+    const GROUP_COLORS = {
+      1: '#EF4444', 2: '#F97316', 3: '#F59E0B', 4: '#EAB308', 5: '#84CC16',
+      6: '#22C55E', 7: '#10B981', 8: '#14B8A6', 9: '#06B6D4', 10: '#0EA5E9',
+      11: '#3B82F6', 12: '#6366F1', 13: '#8B5CF6', 14: '#A855F7', 15: '#D946EF',
+      16: '#EC4899', 17: '#F43F5E'
+    };
+
+    const TEACHER_COLORS = {
+      1: '#DC2626', 2: '#EA580C', 3: '#D97706', 4: '#CA8A04', 5: '#65A30D',
+      6: '#16A34A', 7: '#059669', 8: '#0D9488', 9: '#0891B2', 10: '#0284C7',
+      11: '#2563EB', 12: '#4F46E5', 13: '#7C3AED', 14: '#9333EA', 15: '#C026D3'
+    };
+
+    const TEACHERS = Array.from({ length: CONFIG.TEACHER_COUNT }, (_, index) => {
+      const num = index + 1;
+      const code = `GV${String(num).padStart(2, "0")}`;
+      return {
+        id: code,
+        code,
+        label: code,
+        name: code,
+        type: "teacher",
+        teacherId: num
+      };
+    });
+
+    let allVotes = [];
+    let selectedVoter = null;
+    let selectedVotes = [];
+    let isSubmitting = false;
+
+    const els = {
+      loadingOverlay: document.getElementById("loading-overlay"),
+      toastContainer: document.getElementById("toast-container"),
+      navForm: document.getElementById("nav-form"),
+      navStats: document.getElementById("nav-stats"),
+      formView: document.getElementById("form-view"),
+      statsView: document.getElementById("stats-view"),
+      studentClass: document.getElementById("student-class"),
+      studentGroup: document.getElementById("student-group"),
+      studentStt: document.getElementById("student-stt"),
+      selectStudentBtn: document.getElementById("select-student-btn"),
+      studentPreview: document.getElementById("student-preview"),
+      teacherButtons: document.getElementById("teacher-buttons"),
+      votingSection: document.getElementById("voting-section"),
+      votingNote: document.getElementById("voting-note"),
+      votingGroups: document.getElementById("voting-groups"),
+      voteCount: document.getElementById("vote-count"),
+      submitSection: document.getElementById("submit-section"),
+      submitBtn: document.getElementById("submit-btn"),
+      successMessage: document.getElementById("success-message"),
+      resetBtn: document.getElementById("reset-btn"),
+
+      totalVotes: document.getElementById("total-votes"),
+      studentVotes: document.getElementById("student-votes"),
+      teacherVotes: document.getElementById("teacher-votes"),
+      usedVoters: document.getElementById("used-voters"),
+      remainingVotes: document.getElementById("remaining-votes"),
+      top4Podium: document.getElementById("top4-podium"),
+      fullRanking: document.getElementById("full-ranking"),
+      voteHistory: document.getElementById("vote-history")
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function pad2(num) {
+      return String(num).padStart(2, "0");
+    }
+
+    function getGroupLabel(groupId) {
+      return `Nhóm ${groupId}`;
+    }
+
+    function showToast(message, type = "success") {
+      const toast = document.createElement("div");
+      toast.className = `toast px-6 py-3 rounded-full shadow-lg font-semibold ${
+        type === "success" ? "bg-green-500 text-white" :
+        type === "error" ? "bg-red-500 text-white" :
+        "bg-yellow-500 text-white"
+      }`;
+      toast.textContent = message;
+      els.toastContainer.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function showLoading(show) {
+      els.loadingOverlay.classList.toggle("hidden", !show);
+      els.loadingOverlay.classList.toggle("flex", show);
+    }
+
+    function showView(view) {
+      const isForm = view === "form";
+      els.formView.classList.toggle("hidden", !isForm);
+      els.statsView.classList.toggle("hidden", isForm);
+
+      els.navForm.classList.toggle("bg-indigo-500", isForm);
+      els.navForm.classList.toggle("text-white", isForm);
+      els.navForm.classList.toggle("bg-gray-100", !isForm);
+      els.navForm.classList.toggle("text-gray-600", !isForm);
+
+      els.navStats.classList.toggle("bg-indigo-500", !isForm);
+      els.navStats.classList.toggle("text-white", !isForm);
+      els.navStats.classList.toggle("bg-gray-100", isForm);
+      els.navStats.classList.toggle("text-gray-600", isForm);
+
+      if (!isForm) updateStats();
+    }
+
+    function populateGroupOptions() {
+      els.studentGroup.innerHTML = '<option value="">-- Chọn nhóm --</option>';
+      for (let i = 1; i <= CONFIG.GROUP_COUNT; i++) {
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = `Nhóm ${i}`;
+        els.studentGroup.appendChild(opt);
+      }
+    }
+
+    function populateSttOptions(className) {
+      els.studentStt.innerHTML = '<option value="">-- Chọn STT --</option>';
+      if (!className || !CONFIG.CLASS_CONFIG[className]) return;
+
+      for (let i = 1; i <= CONFIG.CLASS_CONFIG[className]; i++) {
+        const opt = document.createElement("option");
+        opt.value = pad2(i);
+        opt.textContent = pad2(i);
+        els.studentStt.appendChild(opt);
+      }
+    }
+
+    function getVoterKey(voter) {
+      return voter.type === "teacher"
+        ? `teacher_${voter.id}`
+        : `student_${voter.className}_N${voter.groupId}_${voter.stt}`;
+    }
+
+    function hasVoted(voter) {
+      const key = getVoterKey(voter);
+      return allVotes.some(v => v.voterKey === key);
+    }
+
+    function buildStudentVoter() {
+      const className = els.studentClass.value;
+      const groupId = Number(els.studentGroup.value);
+      const stt = els.studentStt.value;
+
+      if (!className) {
+        showToast("Bạn chưa chọn lớp.", "warning");
+        return null;
+      }
+      if (!groupId) {
+        showToast("Bạn chưa chọn nhóm.", "warning");
+        return null;
+      }
+      if (!stt) {
+        showToast("Bạn chưa chọn STT.", "warning");
+        return null;
+      }
+
+      const code = `${className}-N${groupId}-${stt}`;
+      return {
+        id: code,
+        code,
+        label: `${className} - Nhóm ${groupId} - STT ${stt}`,
+        name: code,
+        className,
+        groupId,
+        stt,
+        type: "student"
+      };
+    }
+
+    function renderTeacherButtons() {
+      els.teacherButtons.innerHTML = TEACHERS.map(teacher => {
+        const alreadyVoted = hasVoted(teacher);
+        const isSelected = selectedVoter?.id === teacher.id && selectedVoter?.type === "teacher";
+
+        return `
+          <button
+            data-teacher-id="${teacher.id}"
+            class="teacher-btn card-hover p-3 rounded-xl text-white font-semibold text-sm transition-all ${isSelected ? "selected-card ring-4 ring-white" : ""} ${alreadyVoted ? "opacity-50" : ""}"
+            style="background-color: ${TEACHER_COLORS[teacher.teacherId]};"
+            ${alreadyVoted ? "disabled" : ""}
+          >
+            <div>${teacher.code}</div>
+            <div class="text-[10px] opacity-90">${alreadyVoted ? "Đã bầu" : "Giáo viên"}</div>
+          </button>
+        `;
+      }).join("");
+
+      els.teacherButtons.querySelectorAll(".teacher-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const teacherId = btn.dataset.teacherId;
+          const teacher = TEACHERS.find(t => t.id === teacherId);
+          if (!teacher) return;
+          if (hasVoted(teacher)) {
+            showToast("Giáo viên này đã gửi phiếu rồi.", "warning");
+            return;
+          }
+          selectVoter(teacher);
+        });
+      });
+    }
+
+    function renderVotingGroups() {
+      let html = "";
+
+      for (let i = 1; i <= CONFIG.GROUP_COUNT; i++) {
+        const isOwnGroup = selectedVoter?.type === "student" && selectedVoter.groupId === i;
+        const isSelected = selectedVotes.includes(i);
+
+        if (isOwnGroup) {
+          html += `
+            <div class="p-4 rounded-xl border-2 border-dashed border-gray-300 bg-gray-100 text-center opacity-50 cursor-not-allowed">
+              <span class="text-gray-400 font-semibold">Nhóm ${i}</span>
+              <p class="text-xs text-gray-400 mt-1">Nhóm của bạn</p>
+            </div>
+          `;
+        } else {
+          html += `
+            <button
+              data-group-id="${i}"
+              class="group-btn card-hover p-4 rounded-xl text-white font-semibold transition-all relative ${isSelected ? "selected-card ring-4 ring-white" : ""}"
+              style="background-color: ${GROUP_COLORS[i]}"
+            >
+              <span class="text-lg">Nhóm ${i}</span>
+              ${isSelected ? '<span class="absolute top-1 right-2 text-xl">⭐</span>' : ""}
+            </button>
+          `;
+        }
+      }
+
+      els.votingGroups.innerHTML = html;
+
+      els.votingGroups.querySelectorAll(".group-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const groupId = Number(btn.dataset.groupId);
+          toggleVote(groupId);
+        });
+      });
+    }
+
+    function toggleVote(groupId) {
+      if (!selectedVoter) {
+        showToast("Bạn cần chọn người bình chọn trước.", "warning");
+        return;
+      }
+
+      if (selectedVoter.type === "student" && selectedVoter.groupId === groupId) {
+        showToast("Học sinh không được bình chọn cho nhóm của mình.", "warning");
+        return;
+      }
+
+      const idx = selectedVotes.indexOf(groupId);
+
+      if (idx > -1) {
+        selectedVotes.splice(idx, 1);
+      } else {
+        if (selectedVotes.length >= CONFIG.REQUIRED_VOTES) {
+          showToast(`Bạn chỉ được chọn đúng ${CONFIG.REQUIRED_VOTES} nhóm!`, "warning");
+          return;
+        }
+        selectedVotes.push(groupId);
+      }
+
+      renderVotingGroups();
+      updateVoteCount();
+    }
+
+    function updateVoteCount() {
+      els.voteCount.textContent = String(selectedVotes.length);
+      els.submitBtn.disabled =
+        selectedVotes.length !== CONFIG.REQUIRED_VOTES || !selectedVoter || isSubmitting;
+    }
+
+    function selectVoter(voter) {
+      selectedVoter = voter;
+      selectedVotes = [];
+
+      els.votingSection.classList.remove("hidden");
+      els.submitSection.classList.remove("hidden");
+      els.successMessage.classList.add("hidden");
+
+      if (voter.type === "student") {
+        els.votingNote.innerHTML = `🎓 Bạn là <strong>${escapeHtml(voter.label)}</strong>. Bạn không thể chọn <strong>Nhóm ${voter.groupId}</strong> vì đó là nhóm của mình.`;
+        els.studentPreview.textContent = `Đã chọn: ${voter.label}`;
+        els.studentPreview.classList.remove("hidden");
+      } else {
+        els.votingNote.innerHTML = `👨‍🏫 Bạn là <strong>${escapeHtml(voter.code)}</strong>. Bạn có thể chọn bất kỳ nhóm nào.`;
+      }
+
+      renderTeacherButtons();
+      renderVotingGroups();
+      updateVoteCount();
+      els.votingSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function validateSelectedVotes(voter, votes) {
+      if (!voter) return { ok: false, message: "Bạn chưa chọn người bình chọn." };
+      if (!Array.isArray(votes) || votes.length !== CONFIG.REQUIRED_VOTES) {
+        return { ok: false, message: `Vui lòng chọn đúng ${CONFIG.REQUIRED_VOTES} nhóm.` };
+      }
+
+      const unique = new Set(votes);
+      if (unique.size !== CONFIG.REQUIRED_VOTES) {
+        return { ok: false, message: "5 lựa chọn phải khác nhau." };
+      }
+
+      const invalid = votes.find(v => v < 1 || v > CONFIG.GROUP_COUNT);
+      if (invalid) {
+        return { ok: false, message: "Có nhóm không hợp lệ." };
+      }
+
+      if (voter.type === "student" && votes.includes(voter.groupId)) {
+        return { ok: false, message: "Học sinh không được chọn nhóm của mình." };
+      }
+
+      if (hasVoted(voter)) {
+        return { ok: false, message: "Người này đã gửi phiếu rồi." };
+      }
+
+      return { ok: true };
+    }
+
+    async function submitVote() {
+      if (isSubmitting) return;
+
+      if (!selectedVoter) {
+        showToast("Bạn chưa chọn người bình chọn.", "error");
+        return;
+      }
+
+      const validation = validateSelectedVotes(selectedVoter, selectedVotes);
+      if (!validation.ok) {
+        showToast(validation.message, "error");
+        return;
+      }
+
+      const voterKey = getVoterKey(selectedVoter);
+      const voteRef = doc(db, "votes", voterKey);
+
+      const payload = {
+        voterKey,
+        voterType: selectedVoter.type,
+        voterId: selectedVoter.id,
+        voterCode: selectedVoter.code,
+        voterLabel: selectedVoter.label,
+        voterName: selectedVoter.name,
+        className: selectedVoter.type === "student" ? selectedVoter.className : null,
+        ownGroupId: selectedVoter.type === "student" ? selectedVoter.groupId : null,
+        stt: selectedVoter.type === "student" ? selectedVoter.stt : null,
+        choices: [...selectedVotes],
+        choiceCount: CONFIG.REQUIRED_VOTES,
+        createdAt: serverTimestamp()
+      };
+
+      try {
+        isSubmitting = true;
+        updateVoteCount();
+        showLoading(true);
+
+        await runTransaction(db, async (transaction) => {
+          const existing = await transaction.get(voteRef);
+          if (existing.exists()) {
+            throw new Error("ALREADY_VOTED");
+          }
+          transaction.set(voteRef, payload);
+        });
+
+        showToast("Gửi bình chọn thành công! 🎉");
+        showSuccessMessage();
+      } catch (error) {
+        console.error(error);
+        if (error.message === "ALREADY_VOTED") {
+          showToast("Mã này đã gửi phiếu rồi.", "error");
+        } else {
+          showToast("Có lỗi khi lưu phiếu. Vui lòng thử lại.", "error");
+        }
+      } finally {
+        isSubmitting = false;
+        showLoading(false);
+        updateVoteCount();
+      }
+    }
+
+    function showSuccessMessage() {
+      els.votingSection.classList.add("hidden");
+      els.submitSection.classList.add("hidden");
+      els.successMessage.classList.remove("hidden");
+      renderTeacherButtons();
+    }
+
+    function resetForm() {
+      selectedVoter = null;
+      selectedVotes = [];
+
+      els.votingSection.classList.add("hidden");
+      els.submitSection.classList.add("hidden");
+      els.successMessage.classList.add("hidden");
+      els.studentPreview.classList.add("hidden");
+
+      els.studentClass.value = "";
+      els.studentGroup.value = "";
+      els.studentStt.innerHTML = '<option value="">-- Chọn STT --</option>';
+
+      renderTeacherButtons();
+      updateVoteCount();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function timestampToString(ts) {
+      try {
+        if (!ts) return "Không rõ thời gian";
+        if (typeof ts.toDate === "function") return ts.toDate().toLocaleString("vi-VN");
+        return new Date(ts).toLocaleString("vi-VN");
+      } catch {
+        return "Không rõ thời gian";
+      }
+    }
+
+    function updateStats() {
+      const totalVotes = allVotes.length;
+      const studentCount = allVotes.filter(v => v.voterType === "student").length;
+      const teacherCount = allVotes.filter(v => v.voterType === "teacher").length;
+      const usedVoters = new Set(allVotes.map(v => v.voterKey)).size;
+      const remaining = Math.max(CONFIG.TOTAL_EXPECTED_VOTERS - usedVoters, 0);
+
+      els.totalVotes.textContent = String(totalVotes);
+      els.studentVotes.textContent = String(studentCount);
+      els.teacherVotes.textContent = String(teacherCount);
+      els.usedVoters.textContent = String(usedVoters);
+      els.remainingVotes.textContent = String(remaining);
+
+      const groupScores = {};
+      for (let i = 1; i <= CONFIG.GROUP_COUNT; i++) groupScores[i] = 0;
+
+      allVotes.forEach(vote => {
+        (vote.choices || []).forEach(groupId => {
+          if (groupScores[groupId] !== undefined) groupScores[groupId]++;
+        });
+      });
+
+      const sortedGroups = Object.entries(groupScores)
+        .map(([id, score]) => ({ id: Number(id), score }))
+        .sort((a, b) => b.score - a.score || a.id - b.id);
+
+      renderTop4(sortedGroups, totalVotes);
+      renderFullRanking(sortedGroups);
+      renderVoteHistory();
+    }
+
+    function renderTop4(sortedGroups, totalVotes) {
+      if (totalVotes === 0) {
+        els.top4Podium.innerHTML = '<p class="text-gray-400 text-center py-8 col-span-4">Chưa có dữ liệu bình chọn</p>';
+        return;
+      }
+
+      const medals = ["🥇", "🥈", "🥉", "🏅"];
+      els.top4Podium.innerHTML = sortedGroups.slice(0, 4).map((group, index) => `
+        <div class="text-center p-5 rounded-2xl text-white shadow-lg transform hover:scale-105 transition-all"
+             style="background: linear-gradient(135deg, ${GROUP_COLORS[group.id]}, ${GROUP_COLORS[group.id]}dd)">
+          <div class="text-4xl mb-2">${medals[index]}</div>
+          <div class="text-xl font-bold mb-1">Nhóm ${group.id}</div>
+          <div class="text-3xl font-bold">${group.score}</div>
+          <div class="text-sm opacity-80">lượt chọn</div>
+        </div>
+      `).join("");
+    }
+
+    function renderFullRanking(sortedGroups) {
+      const maxScore = sortedGroups[0]?.score || 1;
+
+      els.fullRanking.innerHTML = sortedGroups.map((group, index) => {
+        const percentage = maxScore > 0 ? (group.score / maxScore) * 100 : 0;
+        return `
+          <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
+                 style="background-color: ${GROUP_COLORS[group.id]}; color: white">
+              ${index + 1}
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between items-center mb-1">
+                <span class="font-semibold">Nhóm ${group.id}</span>
+                <span class="font-bold" style="color: ${GROUP_COLORS[group.id]}">${group.score} lượt</span>
+              </div>
+              <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500"
+                     style="width: ${percentage}%; background-color: ${GROUP_COLORS[group.id]}"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderVoteHistory() {
+      if (allVotes.length === 0) {
+        els.voteHistory.innerHTML = '<p class="text-gray-400 text-center py-8">Chưa có phiếu bình chọn nào</p>';
+        return;
+      }
+
+      const sortedVotes = [...allVotes].sort((a, b) => {
+        const aTime = a.createdAt?.seconds || 0;
+        const bTime = b.createdAt?.seconds || 0;
+        return bTime - aTime;
+      });
+
+      els.voteHistory.innerHTML = sortedVotes.map(vote => {
+        let voterColor = "#64748B";
+        if (vote.voterType === "teacher") {
+          const teacherId = Number(String(vote.voterCode || "").replace("GV", "")) || 1;
+          voterColor = TEACHER_COLORS[teacherId] || "#64748B";
+        } else {
+          voterColor = GROUP_COLORS[vote.ownGroupId] || "#64748B";
+        }
+
+        return `
+          <div class="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+            <div class="flex items-center justify-between mb-2 gap-3 flex-wrap">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-3 py-1 rounded-full text-white text-sm font-semibold"
+                      style="background-color: ${voterColor}">
+                  ${escapeHtml(vote.voterLabel || vote.voterCode || "Không rõ")}
+                </span>
+                <span class="text-xs text-gray-400">${escapeHtml(timestampToString(vote.createdAt))}</span>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              ${(vote.choices || []).map(groupId => `
+                <span class="px-2 py-1 rounded text-white text-xs font-medium"
+                      style="background-color: ${GROUP_COLORS[groupId] || "#64748B"}">
+                  Nhóm ${groupId}
+                </span>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function subscribeVotes() {
+      onSnapshot(collection(db, "votes"), (snapshot) => {
+        allVotes = snapshot.docs.map(docSnap => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        }));
+        updateStats();
+        renderTeacherButtons();
+
+        if (selectedVoter && hasVoted(selectedVoter)) {
+          selectedVotes = [];
+          updateVoteCount();
+        }
+      }, (error) => {
+        console.error(error);
+        showToast("Không đọc được dữ liệu từ Firestore.", "error");
+      });
+    }
+
+    // events
+    els.navForm.addEventListener("click", () => showView("form"));
+    els.navStats.addEventListener("click", () => showView("stats"));
+
+    els.studentClass.addEventListener("change", () => {
+      populateSttOptions(els.studentClass.value);
+      els.studentPreview.classList.add("hidden");
+    });
+
+    els.selectStudentBtn.addEventListener("click", () => {
+      const student = buildStudentVoter();
+      if (!student) return;
+
+      if (hasVoted(student)) {
+        showToast("Mã học sinh này đã gửi phiếu rồi.", "warning");
+        return;
+      }
+
+      selectVoter(student);
+    });
+
+    els.submitBtn.addEventListener("click", submitVote);
+    els.resetBtn.addEventListener("click", resetForm);
+
+    // init
+    populateGroupOptions();
+    renderTeacherButtons();
+    updateVoteCount();
+    subscribeVotes();
+  </script>
+</body>
+</html>
